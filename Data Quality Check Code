@@ -1,0 +1,151 @@
+DATA QUALITY CHECK CODES
+
+FILL RATE 
+
+/* ALERT * /
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval.table dbms=xlsx
+replace;
+sheet="alert";
+run;
+
+
+proc format;
+ value $missfmt ' '='Missing' other='Not Missing';
+ value missfmt . = 'Missing' other='Not Missing';
+run;
+
+proc freq data=sheetval1.table;
+format char $missfmt.;
+format numeric missfmt.;
+tables char / missing nocum;
+tables numeric / missing nocum;
+run;
+
+-------------------------------------------------------
+
+/* ALERT_CASE* /
+
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="alert_case";
+run;
+
+
+proc format;
+ value $missfmt ' '='Missing' other='Not Missing';
+ value missfmt . = 'Missing' other='Not Missing';
+run;
+
+proc freq data=sheetval1.table;
+format char $missfmt.;
+format numeric missfmt.;
+tables char / missing nocum;
+tables numeric / missing nocum;
+run;
+
+--------------------------------------------------------------
+/ * ALERT EVENT */
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="alert_event";
+run;
+
+
+proc format;
+ value $missfmt ' '='Missing' other='Not Missing';
+ value missfmt . = 'Missing' other='Not Missing';
+run;
+
+proc freq data=sheetval1.table;
+format char $missfmt.;
+format numeric missfmt.;
+tables char / missing nocum;
+tables numeric / missing nocum;
+run;
+
+-----------------------------------------------------------
+
+/* USER */
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="user";
+run;
+
+
+proc format;
+ value $missfmt ' '='Missing' other='Not Missing';
+ value missfmt . = 'Missing' other='Not Missing';
+run;
+
+proc freq data=sheetval1.table;
+format char $missfmt.;
+format numeric missfmt.;
+tables char / missing nocum;
+tables numeric / missing nocum;
+run;
+
+-------------------------------------------------------
+
+FREQUENCY CHECK
+
+/* ALERT */
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="alert";
+run;
+proc freq data=sheetval1.table;
+tables ALERT_ID, ALERT_STATUS_CODE, ALERT_DESCRIPTION ,PRIMARY_ENTITY_LEVEL_CODE, PRIMARY_ENTITY_NUMBER ,USER_ID, GROUP_ID, CREATE_USER_ID, VERSION_NUMBER;
+run;
+
+-----------------------------------------------------
+
+/* ALERT_CASE */
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="alert_case";
+run;
+proc freq data=sheetval1.table;
+tables CASE_ID,	ALERT_ID, LSTUPDATE_USER_ID,VERSION_NUMBER
+;
+run;
+
+-------------------------------------------------------
+
+/* ALERT_EVENT */
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="alert_event";
+run;
+proc freq data=sheetval1.table;
+tables Event_ID,ALERT_ID
+;
+run;
+
+
+----------------------------------------------------------
+
+/* USER */
+
+proc import datafile="/home/u49601211/SAMPLE_DATA.xlsx"
+out=sheetval1.table dbms=xlsx
+replace;
+sheet="user";
+run;
+proc freq data=sheetval1.table;
+tables  USER_ID,USER_LONG_ID,EMAIL_ADDRESS
+;
+run;
