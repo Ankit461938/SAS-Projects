@@ -1,0 +1,227 @@
+/* Scorecard Definition Code */
+
+
+/*Age criteria risk calculation start*/
+proc sql;
+create table temp_age as  
+select monotonic() as serial,a.name, a.age, b.age_score
+from Scard.data as a
+left join Scard.age as b
+on a.age=b.value;
+quit;
+/*For missing or other entry default value assigned as 3*/
+proc sql;
+update temp_age set age_score=3 where age_score=.;
+quit;
+/*Age criteria risk calculation end*/
+
+
+/*Profession criteria risk calculation start*/
+proc sql;
+create table temp_profession as 
+select monotonic() as serial, a.name, a.profession, b.p_score
+from Scard.data as a
+left join Scard.profession as b 
+on a.profession=b.value;
+quit;
+/*For missing or other entry default value assigned as 3*//*For missing or other entry default value assigned as 3*/
+proc sql;
+update temp_profession set p_score=3 where p_score=.;
+quit;
+/*Profession criteria risk calculation end*/
+
+
+
+
+/*PEP criteria risk calculation start*/
+proc sql;
+create table temp_pep as 
+select monotonic() as serial, a.name, a.pep, b.pep_score
+from Scard.data as a
+left join Scard.pep as b  
+on a.pep=b.value;
+quit;
+/*For missing or other entry default value assigned as 3*/
+proc sql;
+update temp_pep set pep_score=3 where pep_score=.;
+quit;
+/*PEP criteria risk calculation end*/
+
+
+
+
+/*Citizenship criteria risk calculation start*/
+proc sql;
+create table temp_citizenship  as   
+select monotonic() as serial, a.name, a.citizenship, b.C_score
+from Scard.data as a
+left join Scard.citizenship as b 
+on a.Citizenship=b.value;
+quit;
+/*For missing or other entry default value assigned as 3*/
+proc sql;
+update temp_citizenship set C_score=3 where C_score=.;
+quit;
+/*Citizenship criteria risk calculation end*/
+
+
+/*Criteria wise weight assignment, hard coded assigned as "Age,Profession,PEP,Citizenship*/
+proc sql; 
+  create table AgeweightageScore as   
+  select name,age_score,Weightage_score
+  from temp_age, Scard.weightage
+  where weightage.value="Age"
+  order by temp_age.serial;
+quit;
+proc sql; 
+  create table Professionweightagescore as 
+  select name,P_score,Weightage_score
+  from temp_profession, Scard.weightage
+  where weightage.value="Profession"
+  order by temp_profession.serial;
+quit;
+proc sql; 
+  create table PEPweightageScore as  
+  select name,PEP_score,Weightage_score
+  from temp_pep, Scard.weightage
+  where weightage.value="PEP"
+  order by temp_pep.serial;
+quit;
+proc sql; 
+  create table CitizenweightageScore as 
+  select name,C_score,Weightage_score
+  from temp_citizenship, Scard.weightage
+  where weightage.value="Citizenship"
+  order by temp_citizenship.serial;
+quit;
+/*Criteria wise weight assignment end*/
+
+
+/*Criteria wise weightage risk calculation as weightage_risk=(score*weightage_score)/100  */
+data agecalculatedweightage;   
+set AgeweightageScore;
+Age_weightage_risk=(age_score*Weightage_score)/100;
+DROP = Weightage_score;
+run;
+
+data Professioncalculatedweightage; 
+set Professionweightagescore;
+Profession_weightage_risk=(P_score*Weightage_score)/100;
+DROP = Weightage_score;
+run;
+
+data PEPcalculatedweightage; 
+set PEPweightageScore;
+PEP_weightage_risk=(PEP_score*Weightage_score)/100;
+DROP = Weightage_score;
+run;
+
+data Citizencalculatedweightage;
+set CitizenweightageScore;
+Citizen_weightage_risk=(C_score*Weightage_score)/100;
+DROP = Weightage_score;
+run;
+/*Criteria wise weightage risk calculation end*/
+
+
+/*Joining data table with risk score tables*/
+proc sql;
+create table temp_cal as 
+select a.*,
+b.Age_weightage_risk,c.Profession_weightage_risk,d.PEP_weightage_risk,e.Citizen_weightage_risk
+from Scard.data as a
+left join agecalculatedweightage as b
+on a.name=b.name
+left join Professioncalculatedweightage as c
+on b.name=c.name
+left join PEPcalculatedweightage as d
+on c.name=d.name
+left join Citizencalculatedweightage as e
+on d.name=e.name;
+quit;
+/*end*/
+
+
+/* Sum of weightage risks*/
+data final_temp; 
+set temp_cal;
+Riskscore=sum(Age_weightage_risk,Profession_weightage_risk,PEP_weightage_risk,Citizen_weightage_risk);
+run;
+/*Sum end*/
+
+
+/* New table with required data*/
+proc sql;
+create table Scard.final as 
+select name,age,profession,citizenship,PEP,Income,RiskScore
+from final_temp
+order by name;
+quit;
+/*end*/
+
+
+/*Risk band column assigning, hard coded assignment as "Low, Medium, High"*/
+data Scard.final;  
+set Scard.final;
+length RiskBand $ 10;
+if 1<=Riskscore<=2 then RiskBand="Low";
+else if 2<Riskscore<=3 then RiskBand="Medium";
+else if 3<Riskscore<=4 then RiskBand="High";
+run;
+
+Data Scard.Individual_RS;
+set temp_cal;
+run;
+
+
+
+/*Final output print*/
+proc print data= Scard.final; 
+title "Output data";
+run;
+
+/* Criteria wise weightage risk score*/
+proc print data=Scard.Individual_RS;
+title "Criteria wise weightage risk score";
+run;
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+/* Import Code */
+
+proc import datafile="/home/u49601241/Scoreboard1_Definition.xlsx"
+out=SCARD.DATA dbms=xlsx
+replace;
+sheet="DATA";
+run;
+
+proc import datafile="/home/u49601241/Scoreboard1_Definition.xlsx"
+out=SCARD.WEIGHTAGE dbms=xlsx
+replace;
+sheet="WEGHTAGE";
+run;
+
+proc import datafile="/home/u49601241/Scoreboard1_Definition.xlsx"
+out=SCARD.AGE dbms=xlsx
+replace;
+sheet="AGE";
+run;
+
+proc import datafile="/home/u49601241/Scoreboard1_Definition.xlsx"
+out=SCARD.PROFESSION dbms=xlsx
+replace;
+sheet="PROFESSION";
+run;
+
+proc import datafile="/home/u49601241/Scoreboard1_Definition.xlsx"
+out=SCARD.CITIZENSHIP dbms=xlsx
+replace;
+sheet="CITIZENSHIP";
+run;
+
+proc import datafile="/home/u49601241/Scoreboard1_Definition.xlsx"
+out=SCARD.PEP dbms=xlsx
+replace;
+sheet="PEP";
+run;
