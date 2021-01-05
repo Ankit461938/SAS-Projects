@@ -1,0 +1,64 @@
+/* IMPORT CODE  */
+proc import datafile="/home/u49601241/SAMPLE_DATA.xlsx"
+out=Sfill.table dbms=xlsx
+replace;
+sheet="alert";
+run;
+
+/* FINDING MISSING AND NON MISSING VALUES FOR ALERT ID*/
+proc sql;
+create table result as
+ select count(*) as n ' observations',
+ count(alert_id) as non_missing_values ' non_missing ',
+ nmiss(alert_id) as missing_values ' missing  '
+ from sfill.table
+;quit;
+
+
+/* CALCULATING FILLRATE */
+data fillrate;
+set result;
+fillrate = (non_missing_values/n)*100;
+run;
+
+data colname;
+set fillrate;
+column_name = "alert_id";
+run;
+
+
+/* FINDING MISSING AND NON MISSING VALUES FOR SEGMENT ID*/
+proc sql;
+create table result1 as
+ select count(*) as n ' observations',
+ count(segment_id) as non_missing_values ' non_missing ',
+ nmiss(segment_id) as missing_values ' missing  '
+ from sfill.table
+;quit;
+
+
+/* CALCULATING FILLRATE */
+data fillrate1;
+set result1;
+fillrate = (non_missing_values/n)*100;
+run;
+
+data colname1;
+set fillrate1;
+length column_name $10;
+column_name = "segment_id";
+run;
+
+/* APPENDING */
+proc append base = colname1 data = colname force;
+run;
+proc print data = colname;
+run;
+
+/* PRINT FINAL RESULT */
+proc sql;
+select column_name,fillrate,non_missing_values,missing_values
+from colname1;
+quit;
+
+
